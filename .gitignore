@@ -1,0 +1,11 @@
+# Never commit these
+*.pem
+*.key
+.env
+credentials.json
+
+# Mac system files
+.DS_Store
+
+# Logs (we'll exclude these too - logs belong on the server not in Git)
+logs/*.log
