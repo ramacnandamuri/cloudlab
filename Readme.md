@@ -4,7 +4,7 @@ A server health diagnostics tool built while learning cloud engineering fundamen
 
 ## What it does
 diagnose.sh checks why a server may be down by verifying:
-- System ststus
+- System status
 - Check app logs
 - Check listening ports
 - Check disk usage
