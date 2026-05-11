@@ -20,3 +20,6 @@ grep "ERROR" ~/cloudlab/logs/app.log | tail -5
 
 echo "=== Error count ==="
 grep "ERROR" ~/cloudlab/logs/app.log | wc -l
+
+echo "=== Memory usage ==="
+vm_stat | grep "Pages active"
