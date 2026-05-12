@@ -9,7 +9,7 @@ diagnose.sh checks why a server may be down by verifying:
 - Check listening ports
 - Check disk usage
 - Reports last 5 error messages
-
+    
 ## Tools used
 - Bash, curl, lsof, df, grep
 - Git, VS Code, iTerm2
