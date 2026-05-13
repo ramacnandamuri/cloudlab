@@ -6,6 +6,16 @@ app.get('/', (req, res) => {
   res.send('Hello from my cloud webapp!');
 });
 
+app.get('/info', (req, res) => {
+  res.json({
+  "app": "Cloud Lab Webapp",
+  "version": "1.0.0",
+  "author": "Rama Nandamuri",
+  "deployed_on": "AWS EC2",
+  "container": true
+});
+});
+
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
