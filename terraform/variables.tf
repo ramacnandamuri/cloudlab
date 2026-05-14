@@ -1,0 +1,17 @@
+variable "my_ip" {
+  description = "Your home IP for SSH access"
+  type        = string
+  default     = "86.16.31.251/32"
+}
+
+variable "instance_type" {
+  description = "EC2 instance type"
+  type        = string
+  default     = "t4g.micro"
+}
+
+variable "webapp_image" {
+  description = "Docker image to deploy"
+  type        = string
+  default     = "ramachaitanya/webapp:v2"
+}
