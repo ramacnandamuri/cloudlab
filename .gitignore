@@ -10,4 +10,4 @@ credentials.json
 # Logs (we'll exclude these too - logs belong on the server not in Git)
 logs/*.log
 
-webapp/node_modules/
+webapp/node_modules/aws/resource-ids.txt
