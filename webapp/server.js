@@ -24,6 +24,10 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.get('/test', (req, res) => {
+  res.json({ test: 'passed', version: '1.0.0' });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

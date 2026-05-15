@@ -105,9 +105,9 @@ resource "aws_instance" "web" {
     apt-get install -y docker.io
     systemctl start docker
     systemctl enable docker
-    usermod -aG docker ubuntu
-    docker run -d --restart always -p 3000:3000 ramachaitanya/webapp:v2
-  EOF
+    usermod -aG docker ubuntu       
+    docker run -d --restart always --name webapp -p 3000:3000 ${var.webapp_image}  
+    EOF
 
   tags = {
     Name = "cloudlab-ec2"

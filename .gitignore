@@ -11,3 +11,9 @@ credentials.json
 logs/*.log
 
 webapp/node_modules/aws/resource-ids.txt
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
