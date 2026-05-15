@@ -1,7 +1,7 @@
 variable "my_ip" {
   description = "Your home IP for SSH access"
   type        = string
-  default     = "86.16.31.251/32"
+default = "0.0.0.0/0"
 }
 
 variable "instance_type" {
