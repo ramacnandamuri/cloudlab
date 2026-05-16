@@ -3,7 +3,7 @@ const app = express();
 const PORT = 3000;
 
 app.get('/', (req, res) => {
-res.send('Hello from my cloud webapp! - CI/CD deployed v2 🚀 New features coming soon!!!');
+res.send('Hello from my cloud webapp! - Week 7 High Availability 🚀');
 });
 
 app.get('/info', (req, res) => {
