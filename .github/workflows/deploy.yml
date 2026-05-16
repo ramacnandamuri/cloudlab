@@ -43,14 +43,12 @@ jobs:
           push: true
           tags: ramachaitanya/webapp:latest
 
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            docker pull ramachaitanya/webapp:latest
-            docker stop webapp || true
-            docker rm webapp || true
-            docker run -d --restart always --name webapp -p 3000:3000 ramachaitanya/webapp:latest
+      - name: Deploy to ASG
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: eu-west-2
+        run: |
+          aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name cloudlab-asg \
+            --preferences '{"MinHealthyPercentage": 50}'
