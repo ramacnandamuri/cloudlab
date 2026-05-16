@@ -13,5 +13,12 @@ variable "instance_type" {
 variable "webapp_image" {
   description = "Docker image to deploy"
   type        = string
-  default     = "ramachaitanya/webapp:v2"
+  default     = "ramachaitanya/webapp:latest"
 }
+
+variable "ami_id" {
+  description = "AMI ID for EC2 instances"
+  type        = string
+  default     = "ami-01494bc399c17fe43"
+}
+
