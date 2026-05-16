@@ -49,6 +49,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: eu-west-2
         run: |
+          aws autoscaling cancel-instance-refresh \
+            --auto-scaling-group-name cloudlab-asg 2>/dev/null || true
+          sleep 10
           aws autoscaling start-instance-refresh \
             --auto-scaling-group-name cloudlab-asg \
             --preferences '{"MinHealthyPercentage": 50}'
