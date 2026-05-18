@@ -17,3 +17,5 @@ webapp/node_modules/aws/resource-ids.txt
 *.tfstate
 *.tfstate.backup
 *.tfvars
+# Kubernetes secrets
+kubernetes/*-secret.yaml
