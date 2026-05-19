@@ -253,3 +253,145 @@ resource "aws_autoscaling_group" "webapp" {
     propagate_at_launch = true
   }
 }
+
+# SNS Topic for alerts
+resource "aws_sns_topic" "alerts" {
+  name = "cloudlab-alerts"
+}
+
+resource "aws_sns_topic_subscription" "email" {
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = "ramacnandamuri@gmail.com"
+}
+
+# ALB - Unhealthy hosts alarm
+resource "aws_cloudwatch_metric_alarm" "unhealthy_hosts" {
+  alarm_name          = "cloudlab-unhealthy-hosts"
+  alarm_description   = "Alert when healthy host count drops below 1"
+  metric_name         = "HealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  statistic           = "Minimum"
+  period              = 60
+  threshold           = 1
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    LoadBalancer = aws_lb.main.arn_suffix
+    TargetGroup  = aws_lb_target_group.webapp.arn_suffix
+  }
+}
+
+# ALB - High latency alarm
+resource "aws_cloudwatch_metric_alarm" "high_latency" {
+  alarm_name          = "cloudlab-high-latency"
+  alarm_description   = "Alert when response time exceeds 2 seconds"
+  metric_name         = "TargetResponseTime"
+  namespace           = "AWS/ApplicationELB"
+  statistic           = "Average"
+  period              = 60
+  threshold           = 2
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    LoadBalancer = aws_lb.main.arn_suffix
+  }
+}
+
+# EC2 - High CPU alarm
+resource "aws_cloudwatch_metric_alarm" "high_cpu" {
+  alarm_name          = "cloudlab-high-cpu"
+  alarm_description   = "Alert when CPU exceeds 80%"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  statistic           = "Average"
+  period              = 300
+  threshold           = 80
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+
+  dimensions = {
+    AutoScalingGroupName = aws_autoscaling_group.webapp.name
+  }
+}
+# CloudWatch Log Groups
+resource "aws_cloudwatch_log_group" "webapp" {
+  name              = "/cloudlab/webapp"
+  retention_in_days = 7
+
+  tags = {
+    Name = "cloudlab-webapp-logs"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "ec2" {
+  name              = "/cloudlab/ec2"
+  retention_in_days = 7
+
+  tags = {
+    Name = "cloudlab-ec2-logs"
+  }
+}
+
+# CloudWatch Dashboard
+resource "aws_cloudwatch_dashboard" "main" {
+  dashboard_name = "cloudlab-dashboard"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type = "metric"
+        properties = {
+          title  = "CPU Utilisation"
+          metrics = [
+            ["AWS/EC2", "CPUUtilization", "AutoScalingGroupName", "cloudlab-asg"]
+          ]
+          period = 300
+          stat   = "Average"
+          region = "eu-west-2"
+        }
+      },
+      {
+        type = "metric"
+        properties = {
+          title  = "ALB Request Count"
+          metrics = [
+            ["AWS/ApplicationELB", "RequestCount", "LoadBalancer", aws_lb.main.arn_suffix]
+          ]
+          period = 300
+          stat   = "Sum"
+          region = "eu-west-2"
+        }
+      },
+      {
+        type = "metric"
+        properties = {
+          title  = "ALB Response Time"
+          metrics = [
+            ["AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", aws_lb.main.arn_suffix]
+          ]
+          period = 300
+          stat   = "Average"
+          region = "eu-west-2"
+        }
+      },
+      {
+        type = "metric"
+        properties = {
+          title  = "Healthy Host Count"
+          metrics = [
+            ["AWS/ApplicationELB", "HealthyHostCount", "LoadBalancer", aws_lb.main.arn_suffix, "TargetGroup", aws_lb_target_group.webapp.arn_suffix]
+          ]
+          period = 60
+          stat   = "Minimum"
+          region = "eu-west-2"
+        }
+      }
+    ]
+  })
+}
