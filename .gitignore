@@ -19,3 +19,5 @@ webapp/node_modules/aws/resource-ids.txt
 *.tfvars
 # Kubernetes secrets
 kubernetes/*-secret.yaml
+# SAM build artifacts
+serverless/cloudlab-api/.aws-sam/
