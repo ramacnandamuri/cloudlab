@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: URL Shortener — Lambda + DynamoDB + API Gateway
+
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: python3.14
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref UrlTable
+       
+
+Resources:
+  # DynamoDB Table
+  UrlTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: url-shortener
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: code
+          AttributeType: S
+      KeySchema:
+        - AttributeName: code
+          KeyType: HASH
+
+  # Create short URL function
+  CreateShortUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.create_short_url
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UrlTable
+      Events:
+        CreateShortUrl:
+          Type: Api
+          Properties:
+            Path: /shorten
+            Method: post
+
+  # Redirect function
+  RedirectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.redirect_url
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UrlTable
+      Events:
+        RedirectUrl:
+          Type: Api
+          Properties:
+            Path: /{code}
+            Method: get
+
+Outputs:
+  ApiUrl:
+    Description: URL Shortener API endpoint
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"

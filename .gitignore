@@ -21,3 +21,4 @@ webapp/node_modules/aws/resource-ids.txt
 kubernetes/*-secret.yaml
 # SAM build artifacts
 serverless/cloudlab-api/.aws-sam/
+url-shortener/url-shortener/.aws-sam/
