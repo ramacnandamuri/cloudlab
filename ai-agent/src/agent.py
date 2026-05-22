@@ -1,16 +1,31 @@
-from langchain_ollama import OllamaLLM
-from langchain.agents import AgentExecutor, create_react_agent
-from langchain.tools import tool
-from langchain import hub
+import os
+from langchain_aws import ChatBedrock
+from langchain_ollama import ChatOllama
+from langchain_core.tools import tool
+from langgraph.prebuilt import create_react_agent
 from src.prompts import SYSTEM_PROMPT
 from src.tools import check_server_health, restart_service
 
-# Step 1 - Connect to local Ollama LLM
-llm = OllamaLLM(
-    model="llama3.2",
-    base_url="http://host.docker.internal:11434"
-)
-# Step 2 - Define tools
+# Switch between local and production!
+ENV = os.getenv("AGENT_ENV", "local")
+
+if ENV == "production":
+    # Production = AWS Bedrock
+    llm = ChatBedrock(
+    model_id="amazon.nova-lite-v1:0",
+        region_name="eu-west-2"
+    )
+else:
+    # Local = Ollama (free!)
+    llm = ChatOllama(
+        model="llama3.2",
+        base_url=os.getenv(
+            "OLLAMA_URL",
+            "http://localhost:11434"
+        )
+    )
+
+# Define tools
 @tool
 def check_health(server_name: str) -> str:
     """Check server health. Input is server name."""
@@ -23,21 +38,19 @@ def restart(server_name: str) -> str:
 
 tools = [check_health, restart]
 
-# Step 3 - Get ReAct prompt from LangChain hub
-prompt = hub.pull("hwchase17/react")
-
-# Step 4 - Create agent
-agent = create_react_agent(llm, tools, prompt)
-agent_executor = AgentExecutor(
-    agent=agent,
+# Create agent using LangGraph
+agent = create_react_agent(
+    model=llm,
     tools=tools,
-    verbose=True,
-    handle_parsing_errors=True
+    prompt=SYSTEM_PROMPT
 )
 
-# Step 5 - Give agent a goal!
+# Run!
 if __name__ == "__main__":
-    result = agent_executor.invoke({
-        "input": f"{SYSTEM_PROMPT}\nCheck PROD-01 and fix any issues"
+    result = agent.invoke({
+        "messages": [
+            {"role": "user", "content": "Check PROD-01 and fix any issues"}
+        ]
     })
-    print(result["output"])
+    # Print final response
+    print(result["messages"][-1].content)
