@@ -22,3 +22,6 @@ kubernetes/*-secret.yaml
 # SAM build artifacts
 serverless/cloudlab-api/.aws-sam/
 url-shortener/url-shortener/.aws-sam/
+
+# Lambda zip packages
+*.zip
