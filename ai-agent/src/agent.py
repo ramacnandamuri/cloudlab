@@ -6,8 +6,10 @@ from src.prompts import SYSTEM_PROMPT
 from src.tools import check_server_health, restart_service
 
 # Step 1 - Connect to local Ollama LLM
-llm = OllamaLLM(model="llama3.2")
-
+llm = OllamaLLM(
+    model="llama3.2",
+    base_url="http://host.docker.internal:11434"
+)
 # Step 2 - Define tools
 @tool
 def check_health(server_name: str) -> str:
