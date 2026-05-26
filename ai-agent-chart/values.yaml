@@ -1,0 +1,26 @@
+replicaCount: 1
+
+image:
+  repository: ramachaitanya/aiops-agent
+  pullPolicy: Always
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8080
+
+serviceAccount:
+  create: true
+  name: ""
+
+ingress:
+  enabled: false
+
+autoscaling:
+  enabled: false
+
+env:
+  - name: AGENT_ENV
+    value: "local"
+  - name: OLLAMA_URL
+    value: "http://host.docker.internal:11434"
