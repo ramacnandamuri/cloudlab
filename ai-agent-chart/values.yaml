@@ -26,7 +26,7 @@ env:
     value: "http://host.docker.internal:11434"
 cronJob:
   enabled: true
-  schedule: "*/5 * * * *"
+  schedule: "*/2 * * * *"
 
 deployment:
   enabled: false
