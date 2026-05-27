@@ -24,3 +24,9 @@ env:
     value: "local"
   - name: OLLAMA_URL
     value: "http://host.docker.internal:11434"
+cronJob:
+  enabled: true
+  schedule: "*/5 * * * *"
+
+deployment:
+  enabled: false
