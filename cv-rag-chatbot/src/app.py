@@ -1,15 +1,18 @@
+import os
 import streamlit as st
-from langchain_ollama import OllamaEmbeddings, ChatOllama
+from dotenv import load_dotenv
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
+from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
-import os
+
+# ── Load .env ─────────────────────────────
+load_dotenv()
 
 # ── Config ────────────────────────────────
-CHROMA_DIR  = "chroma_db"
-EMBED_MODEL = "nomic-embed-text"
-LLM_MODEL   = "llama3.2"
+CHROMA_DIR = "chroma_db"
 
 # ── Page Setup ────────────────────────────
 st.set_page_config(
@@ -23,18 +26,30 @@ st.title("🤖 CV Assistant")
 st.markdown("**Ask me anything about the candidate's experience, skills, and projects.**")
 st.divider()
 
-# ── Load RAG chain (cached so it loads once) ──
+# ── Load RAG chain (cached) ───────────────
 @st.cache_resource
 def load_rag_chain():
-    embeddings  = OllamaEmbeddings(model=EMBED_MODEL)
+
+    # HuggingFace embeddings — free, works everywhere!
+    embeddings = HuggingFaceEmbeddings(
+        model_name="all-MiniLM-L6-v2"
+    )
+
     vectorstore = Chroma(
         persist_directory=CHROMA_DIR,
         embedding_function=embeddings
     )
+
     retriever = vectorstore.as_retriever(
         search_kwargs={"k": 3}
     )
-    llm = ChatOllama(model=LLM_MODEL)
+
+    # Groq LLM — free cloud LLM!
+    llm = ChatGroq(
+        model="llama-3.1-8b-instant",
+        temperature=0,
+        api_key=os.getenv("GROQ_API_KEY")
+    )
 
     prompt = ChatPromptTemplate.from_template("""
 You are a helpful assistant answering questions
@@ -81,8 +96,6 @@ for message in st.session_state.messages:
 
 # ── Chat Input ────────────────────────────
 if question := st.chat_input("Ask about the candidate..."):
-
-    # Show user message
     st.session_state.messages.append({
         "role": "user",
         "content": question
@@ -90,18 +103,11 @@ if question := st.chat_input("Ask about the candidate..."):
     with st.chat_message("user"):
         st.markdown(question)
 
-    # Generate answer
     with st.chat_message("assistant"):
         with st.spinner("Searching CV..."):
             chain  = load_rag_chain()
             answer = chain.invoke(question)
             st.markdown(answer)
-
-    # Save answer to history
-    st.session_state.messages.append({
-        "role": "assistant",
-        "content": answer
-    })
 
 # ── Sidebar ───────────────────────────────
 with st.sidebar:
@@ -115,10 +121,13 @@ with st.sidebar:
         "Why should I hire this candidate?",
         "What CI/CD tools have they used?",
         "Are they available immediately?",
+        "What is the candidate's education?",
+        "What DevOps tools do they know?",
     ]
     for q in questions:
         st.markdown(f"• {q}")
 
     st.divider()
-    st.caption("Powered by LangChain + ChromaDB + Ollama")
-    st.caption("Running 100% locally — free!")
+    st.caption("Powered by LangChain + ChromaDB + Groq")
+    st.caption("RAG — Retrieval Augmented Generation")
+    st.caption("🔒 Running on secure cloud infrastructure")

@@ -5,7 +5,7 @@ import os
 from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_ollama import OllamaEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 # ── Config ────────────────────────────────
 DATA_DIR   = "data"
@@ -37,9 +37,9 @@ def split_documents(docs):
 def store_in_chromadb(chunks):
     print("Creating embeddings and storing in ChromaDB...")
 
-    # Ollama embeddings — free, local!
-    embeddings = OllamaEmbeddings(
-        model="nomic-embed-text"
+    # HuggingFace embeddings — free, works everywhere!
+    embeddings = HuggingFaceEmbeddings(
+        model_name="all-MiniLM-L6-v2"
     )
 
     vectorstore = Chroma.from_documents(
