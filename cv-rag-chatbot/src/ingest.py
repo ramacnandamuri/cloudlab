@@ -5,27 +5,10 @@ except ImportError:
     pass
 
 import os
+import chromadb
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_chroma import Chroma
-from fastembed import TextEmbedding
-from langchain_core.embeddings import Embeddings
-from typing import List
-
-# ── FastEmbed Wrapper ─────────────────────
-class FastEmbedWrapper(Embeddings):
-    def __init__(self, model_name: str):
-        self.model = TextEmbedding(model_name=model_name)
-
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        return [
-            [float(x) for x in embedding]
-            for embedding in self.model.embed(texts)
-        ]
-
-    def embed_query(self, text: str) -> List[float]:
-        embedding = list(self.model.embed([text]))[0]
-        return [float(x) for x in embedding]
 
 # ── Config ────────────────────────────────
 DATA_DIR   = "data"
@@ -57,20 +40,28 @@ def split_documents(docs):
     return chunks
 
 def store_in_chromadb(chunks):
-    """Convert chunks to vectors and store in ChromaDB"""
-    print("Creating embeddings and storing in ChromaDB...")
+    """Store chunks in ChromaDB using default embeddings"""
+    print("Storing in ChromaDB...")
 
-    embeddings = FastEmbedWrapper(
-        model_name="BAAI/bge-small-en-v1.5"
+    client = chromadb.PersistentClient(path=CHROMA_DIR)
+    ef = DefaultEmbeddingFunction()
+
+    # Delete existing collection if exists
+    try:
+        client.delete_collection("cv_chunks")
+    except:
+        pass
+
+    collection = client.get_or_create_collection(
+        name="cv_chunks",
+        embedding_function=ef
     )
 
-    vectorstore = Chroma.from_documents(
-        documents=chunks,
-        embedding=embeddings,
-        persist_directory=CHROMA_DIR
-    )
+    texts = [chunk.page_content for chunk in chunks]
+    ids   = [str(i) for i in range(len(chunks))]
+
+    collection.add(documents=texts, ids=ids)
     print(f"Stored {len(chunks)} chunks in ChromaDB!")
-    return vectorstore
 
 if __name__ == "__main__":
     print("Starting CV ingestion...")

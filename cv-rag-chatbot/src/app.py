@@ -1,13 +1,10 @@
 import os
 import streamlit as st
-from fastembed import TextEmbedding
-from langchain_core.embeddings import Embeddings
-from langchain_chroma import Chroma
+import chromadb
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from typing import List
 
 # ── Load .env ─────────────────────────────
 try:
@@ -15,21 +12,6 @@ try:
     load_dotenv()
 except ImportError:
     pass
-
-# ── FastEmbed Wrapper ─────────────────────
-class FastEmbedWrapper(Embeddings):
-    def __init__(self, model_name: str):
-        self.model = TextEmbedding(model_name=model_name)
-
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
-        return [
-            [float(x) for x in embedding]
-            for embedding in self.model.embed(texts)
-        ]
-
-    def embed_query(self, text: str) -> List[float]:
-        embedding = list(self.model.embed([text]))[0]
-        return [float(x) for x in embedding]
 
 # ── Config ────────────────────────────────
 CHROMA_DIR = "chroma_db"
@@ -46,29 +28,32 @@ st.title("🤖 CV Assistant")
 st.markdown("**Ask me anything about the candidate's experience, skills, and projects.**")
 st.divider()
 
-# ── Load RAG chain (cached) ───────────────
+# ── Load components (cached) ──────────────
 @st.cache_resource
-def load_rag_chain():
-
-    embeddings = FastEmbedWrapper(
-        model_name="BAAI/bge-small-en-v1.5"
+def load_components():
+    client = chromadb.PersistentClient(path=CHROMA_DIR)
+    ef = DefaultEmbeddingFunction()
+    collection = client.get_collection(
+        name="cv_chunks",
+        embedding_function=ef
     )
-
-    vectorstore = Chroma(
-        persist_directory=CHROMA_DIR,
-        embedding_function=embeddings
-    )
-
-    retriever = vectorstore.as_retriever(
-        search_kwargs={"k": 3}
-    )
-
     llm = ChatGroq(
         model="llama-3.1-8b-instant",
         temperature=0,
         api_key=os.getenv("GROQ_API_KEY")
     )
+    return collection, llm
 
+def get_answer(question, collection, llm):
+    """Search CV and generate answer"""
+    # Search ChromaDB for relevant chunks
+    results = collection.query(
+        query_texts=[question],
+        n_results=3
+    )
+    context = "\n\n".join(results["documents"][0])
+
+    # Build prompt
     prompt = ChatPromptTemplate.from_template("""
 You are a helpful assistant answering questions
 about a candidate's CV and experience.
@@ -84,19 +69,11 @@ Question: {question}
 
 Answer:""")
 
-    def format_docs(docs):
-        return "\n\n".join(doc.page_content for doc in docs)
-
-    chain = (
-        {
-            "context": retriever | format_docs,
-            "question": RunnablePassthrough()
-        }
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
-    return chain
+    chain = prompt | llm | StrOutputParser()
+    return chain.invoke({
+        "context": context,
+        "question": question
+    })
 
 # ── Chat History ──────────────────────────
 if "messages" not in st.session_state:
@@ -123,8 +100,8 @@ if question := st.chat_input("Ask about the candidate..."):
 
     with st.chat_message("assistant"):
         with st.spinner("Searching CV..."):
-            chain  = load_rag_chain()
-            answer = chain.invoke(question)
+            collection, llm = load_components()
+            answer = get_answer(question, collection, llm)
             st.markdown(answer)
 
     st.session_state.messages.append({
@@ -144,13 +121,11 @@ with st.sidebar:
         "Why should I hire this candidate?",
         "What CI/CD tools have they used?",
         "Are they available immediately?",
-        "What is the candidate's education?",
-        "What DevOps tools do they know?",
     ]
     for q in questions:
         st.markdown(f"• {q}")
 
     st.divider()
-    st.caption("Powered by LangChain + ChromaDB + Groq")
+    st.caption("Powered by ChromaDB + Groq + LangChain")
     st.caption("RAG — Retrieval Augmented Generation")
     st.caption("🔒 Running on secure cloud infrastructure")
