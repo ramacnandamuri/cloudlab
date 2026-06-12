@@ -5,7 +5,7 @@ import os
 from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import FastEmbedEmbeddings
 
 # ── Config ────────────────────────────────
 DATA_DIR   = "data"
@@ -37,9 +37,9 @@ def split_documents(docs):
 def store_in_chromadb(chunks):
     print("Creating embeddings and storing in ChromaDB...")
 
-    # HuggingFace embeddings — free, works everywhere!
-    embeddings = HuggingFaceEmbeddings(
-        model_name="all-MiniLM-L6-v2"
+    # FastEmbed — lightweight, no torch needed!
+    embeddings = FastEmbedEmbeddings(
+        model_name="BAAI/bge-small-en-v1.5"
     )
 
     vectorstore = Chroma.from_documents(

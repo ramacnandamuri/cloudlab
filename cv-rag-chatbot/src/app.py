@@ -1,6 +1,6 @@
 import os
 import streamlit as st
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_chroma import Chroma
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
@@ -33,10 +33,10 @@ st.divider()
 @st.cache_resource
 def load_rag_chain():
 
-    # HuggingFace embeddings — free, works everywhere!
-    embeddings = HuggingFaceEmbeddings(
-        model_name="all-MiniLM-L6-v2"
-    )
+    
+    embeddings = FastEmbedEmbeddings(
+    model_name="BAAI/bge-small-en-v1.5"
+  )
 
     vectorstore = Chroma(
         persist_directory=CHROMA_DIR,

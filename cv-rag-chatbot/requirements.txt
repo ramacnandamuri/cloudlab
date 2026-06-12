@@ -17,6 +17,7 @@ click==8.4.1
 distro==1.9.0
 docx2txt==0.9
 durationpy==0.10
+fastembed==0.8.0
 filelock==3.29.1
 flatbuffers==25.12.19
 frozenlist==1.8.0
@@ -60,6 +61,7 @@ langgraph-checkpoint==4.1.1
 langgraph-prebuilt==1.1.0
 langgraph-sdk==0.4.2
 langsmith==0.8.9
+loguru==0.7.3
 markdown-it-py==4.2.0
 MarkupSafe==3.0.3
 mdurl==0.1.2
@@ -87,6 +89,7 @@ pandas==3.0.3
 pillow==12.2.0
 propcache==0.5.2
 protobuf==6.33.6
+py_rust_stemmers==0.1.8
 pyarrow==24.0.0
 pybase64==1.4.3
 pydantic==2.13.4
