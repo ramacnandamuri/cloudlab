@@ -1,11 +1,13 @@
 import os
 import streamlit as st
-from langchain_community.embeddings import FastEmbedEmbeddings
+from fastembed import TextEmbedding
+from langchain_core.embeddings import Embeddings
 from langchain_chroma import Chroma
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
+from typing import List
 
 # ── Load .env ─────────────────────────────
 try:
@@ -13,6 +15,21 @@ try:
     load_dotenv()
 except ImportError:
     pass
+
+# ── FastEmbed Wrapper ─────────────────────
+class FastEmbedWrapper(Embeddings):
+    def __init__(self, model_name: str):
+        self.model = TextEmbedding(model_name=model_name)
+
+    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+        return [
+            [float(x) for x in embedding]
+            for embedding in self.model.embed(texts)
+        ]
+
+    def embed_query(self, text: str) -> List[float]:
+        embedding = list(self.model.embed([text]))[0]
+        return [float(x) for x in embedding]
 
 # ── Config ────────────────────────────────
 CHROMA_DIR = "chroma_db"
@@ -33,10 +50,9 @@ st.divider()
 @st.cache_resource
 def load_rag_chain():
 
-    
-    embeddings = FastEmbedEmbeddings(
-    model_name="BAAI/bge-small-en-v1.5"
-  )
+    embeddings = FastEmbedWrapper(
+        model_name="BAAI/bge-small-en-v1.5"
+    )
 
     vectorstore = Chroma(
         persist_directory=CHROMA_DIR,
@@ -47,7 +63,6 @@ def load_rag_chain():
         search_kwargs={"k": 3}
     )
 
-    # Groq LLM — free cloud LLM!
     llm = ChatGroq(
         model="llama-3.1-8b-instant",
         temperature=0,
@@ -111,6 +126,11 @@ if question := st.chat_input("Ask about the candidate..."):
             chain  = load_rag_chain()
             answer = chain.invoke(question)
             st.markdown(answer)
+
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": answer
+    })
 
 # ── Sidebar ───────────────────────────────
 with st.sidebar:
