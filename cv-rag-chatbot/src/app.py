@@ -1,7 +1,6 @@
 import os
+import json
 import streamlit as st
-import chromadb
-from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -14,7 +13,7 @@ except ImportError:
     pass
 
 # ── Config ────────────────────────────────
-CHROMA_DIR = "chroma_db"
+CHUNKS_FILE = "data/cv_chunks.json"
 
 # ── Page Setup ────────────────────────────
 st.set_page_config(
@@ -23,37 +22,43 @@ st.set_page_config(
     layout="centered"
 )
 
-# ── Header ────────────────────────────────
 st.title("🤖 CV Assistant")
 st.markdown("**Ask me anything about the candidate's experience, skills, and projects.**")
 st.divider()
 
-# ── Load components (cached) ──────────────
+# ── Load LLM (cached) ─────────────────────
 @st.cache_resource
-def load_components():
-    client = chromadb.PersistentClient(path=CHROMA_DIR)
-    ef = DefaultEmbeddingFunction()
-    collection = client.get_collection(
-        name="cv_chunks",
-        embedding_function=ef
-    )
-    llm = ChatGroq(
+def load_llm():
+    return ChatGroq(
         model="llama-3.1-8b-instant",
         temperature=0,
         api_key=os.getenv("GROQ_API_KEY")
     )
-    return collection, llm
 
-def get_answer(question, collection, llm):
-    """Search CV and generate answer"""
-    # Search ChromaDB for relevant chunks
-    results = collection.query(
-        query_texts=[question],
-        n_results=3
-    )
-    context = "\n\n".join(results["documents"][0])
+# ── Load CV chunks (cached) ───────────────
+@st.cache_data
+def load_chunks():
+    with open(CHUNKS_FILE, "r") as f:
+        return json.load(f)
 
-    # Build prompt
+def get_answer(question, chunks, llm):
+    """Simple keyword search + LLM answer"""
+    question_lower = question.lower()
+    words = question_lower.split()
+
+    # Score each chunk by keyword matches
+    scored = []
+    for chunk in chunks:
+        score = sum(
+            1 for word in words
+            if word in chunk.lower() and len(word) > 3
+        )
+        scored.append((score, chunk))
+
+    # Get top 3 most relevant chunks
+    scored.sort(reverse=True)
+    context = "\n\n".join([c for _, c in scored[:3]])
+
     prompt = ChatPromptTemplate.from_template("""
 You are a helpful assistant answering questions
 about a candidate's CV and experience.
@@ -100,8 +105,9 @@ if question := st.chat_input("Ask about the candidate..."):
 
     with st.chat_message("assistant"):
         with st.spinner("Searching CV..."):
-            collection, llm = load_components()
-            answer = get_answer(question, collection, llm)
+            llm    = load_llm()
+            chunks = load_chunks()
+            answer = get_answer(question, chunks, llm)
             st.markdown(answer)
 
     st.session_state.messages.append({
@@ -126,6 +132,5 @@ with st.sidebar:
         st.markdown(f"• {q}")
 
     st.divider()
-    st.caption("Powered by ChromaDB + Groq + LangChain")
+    st.caption("Powered by Groq + LangChain")
     st.caption("RAG — Retrieval Augmented Generation")
-    st.caption("🔒 Running on secure cloud infrastructure")
