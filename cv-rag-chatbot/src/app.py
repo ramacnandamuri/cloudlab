@@ -13,7 +13,9 @@ except ImportError:
     pass
 
 # ── Config ────────────────────────────────
-CHUNKS_FILE = "data/cv_chunks.json"
+import os
+BASE_DIR    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CHUNKS_FILE = os.path.join(BASE_DIR, "data", "cv_chunks.json")
 
 # ── Page Setup ────────────────────────────
 st.set_page_config(
